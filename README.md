@@ -5,11 +5,7 @@ A Track Change extension for Tiptap.
 
 ## Installation
 
-```bash
-npm install track-change-extension
-```
-
-or just copy the ts file to your project. it depends on the @tiptap/pm package to use ProseMirror api.
+just copy the ts file to your project. it depends on the @tiptap/pm package to use ProseMirror api.
 
 ## Usage
 

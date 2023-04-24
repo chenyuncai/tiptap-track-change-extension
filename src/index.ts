@@ -5,6 +5,8 @@ import {Extension, Mark, getMarkRange, getMarksBetween, isMarkActive, mergeAttri
 import type { CommandProps, Editor, MarkRange} from '@tiptap/core'
 import type { Transaction } from '@tiptap/pm/state'
 
+const LOG_ENABLED = true
+
 export const MARK_DELETION = 'deletion'
 export const MARK_INSERTION = 'insertion'
 export const EXTENSION_NAME = 'trackchange'
@@ -48,8 +50,6 @@ declare module '@tiptap/core' {
     }
   }
 }
-
-const LOG_ENABLED = false
 
 // insert mark
 export const InsertionMark = Mark.create({
@@ -418,6 +418,7 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
     let reAddOffset = 0
     allSteps.forEach((step: Step, index: number) => {
       if (step instanceof ReplaceStep) {
+        const invertedStep = step.invert(transaction.docs[index])
         if (step.slice.size) {
           const insertionMark = editor.state.doc.type.schema.marks.insertion.create()
           const deletionMark = editor.state.doc.type.schema.marks.deletion.create()
@@ -434,22 +435,13 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
           newChangeTr.removeMark(from, to, deletionMark)
         }
         if (step.from !== step.to && trackChangeEnabled) {
-          LOG_ENABLED && console.log('find content to readd')
+          LOG_ENABLED && console.log('find content to readd', step)
           // get the reverted step, so we can know what content is deleted in this step and readd then
           // make sure use related doc in transaction. every step has the new doc with same order
           // TODO: is there difference between vue2 and vue3
-          const invertedStep = step.invert(transaction.docs[index])
           const skipSteps: Array<ReplaceStep> = []
           // collect the content we need to ignore readd, because some content is insert mark before, there data need to be allowed delete
-          invertedStep.slice.content.forEach((node, offset) => {
-            const start = invertedStep.from + offset
-            const end = start + node.nodeSize
-            if (node.marks.find(m => m.type.name === MARK_INSERTION)) {
-              // construct a empty step, apply this after readd action applied
-              skipSteps.push(new ReplaceStep(start, end, Slice.empty))
-              reAddOffset -= node.nodeSize
-            }
-          })
+          LOG_ENABLED && console.log('invertedStep', invertedStep)
           const reAddStep = new ReplaceStep(
             invertedStep.from + reAddOffset,
             invertedStep.from + reAddOffset,
@@ -457,6 +449,16 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
             // @ts-ignore: what is internal means
             invertedStep.structure
           )
+          invertedStep.slice.content.forEach((node, offset) => {
+            const start = invertedStep.from + offset
+            const end = start + node.nodeSize
+            LOG_ENABLED &&  console.log('invert node', node)
+            if (node.marks.find(m => m.type.name === MARK_INSERTION)) {
+              // construct a empty step, apply this after readd action applied
+              skipSteps.push(new ReplaceStep(start, end, Slice.empty))
+              reAddOffset -= node.nodeSize
+            }
+          })
           reAddOffset += invertedStep.slice.size
           // apply readd step action
           newChangeTr.step(reAddStep)

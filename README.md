@@ -2,6 +2,12 @@
 
 A Track Change Extension for Tiptap. Like the revision in Microsoft Office Word.
 
+## Demo
+
+[Visit Demo](https://track-change.onrender.com/)
+
+The demo is deployed on [render.com](https://www.render.com). You maybe need a VPN if you are in china
+
 ## Installation
 
 just copy the ts file to your project or install from npm. it depends on the @tiptap/pm package to use ProseMirror api.

@@ -280,6 +280,8 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
     if (!transaction.docChanged) { return }
     // check if it is change by accept or reject
     if (transaction.getMeta('trackManualChanged')) { return }
+    // if this is a redo or undo, ignore it.
+    if (transaction.getMeta('history$')) { return }
     // check if it is synced by another client or the server, need to ignore too
     const syncMeta = transaction.getMeta('y-sync$')
     if (syncMeta && syncMeta.isChangeOrigin) {

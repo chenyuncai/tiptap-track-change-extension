@@ -1,6 +1,6 @@
 import { ReplaceStep, Step } from '@tiptap/pm/transform'
 import { TextSelection, Plugin, PluginKey } from '@tiptap/pm/state'
-import { Slice } from '@tiptap/pm/model'
+import { Slice, Fragment } from '@tiptap/pm/model'
 import {Extension, Mark, getMarkRange, getMarksBetween, isMarkActive, mergeAttributes} from '@tiptap/core'
 import type { CommandProps, Editor, MarkRange} from '@tiptap/core'
 import type { Transaction } from '@tiptap/pm/state'
@@ -451,16 +451,29 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
             // @ts-ignore: what is internal means
             invertedStep.structure
           )
-          invertedStep.slice.content.forEach((node, offset) => {
-            const start = invertedStep.from + offset
-            const end = start + node.nodeSize
-            LOG_ENABLED &&  console.log('invert node', node)
-            if (node.marks.find(m => m.type.name === MARK_INSERTION)) {
-              // construct a empty step, apply this after readd action applied
-              skipSteps.push(new ReplaceStep(start, end, Slice.empty))
-              reAddOffset -= node.nodeSize
-            }
-          })
+          // make a empty step to replace the original "INSERT" mark, because these content don't need to readd
+          // the slice content maybe a TextNode or other node with any child content
+          // so we need to travel all the content to find the "INSERT" mark
+          let addedEmptyOffset = 0 // when empty step is added, record the offset to correct the next empty step, because the content will b shorter than the current when create next empty step
+          const travelContent = (content: Fragment, parentOffset: number) => {
+            content.forEach((node, offset) => {
+              const start = parentOffset + offset
+              const end = start + node.nodeSize
+              if (node.content && node.content.size) {
+                // this node has child content, need to travel
+                travelContent(node.content, start)
+              } else {
+                // this node is a text node, or a node without child content
+                if (node.marks.find(m => m.type.name === MARK_INSERTION)) {
+                  // construct a empty step, apply this after readd action applied
+                  skipSteps.push(new ReplaceStep(start - addedEmptyOffset, end - addedEmptyOffset, Slice.empty))
+                  addedEmptyOffset += node.nodeSize
+                  reAddOffset -= node.nodeSize
+                }
+              }
+            })
+          }
+          travelContent(invertedStep.slice.content, invertedStep.from)
           reAddOffset += invertedStep.slice.size
           // apply readd step action
           newChangeTr.step(reAddStep)

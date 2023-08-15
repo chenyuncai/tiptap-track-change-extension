@@ -54,6 +54,22 @@ declare module '@tiptap/core' {
 // insert mark
 export const InsertionMark = Mark.create({
   name: MARK_INSERTION,
+  addAttributes () {
+    return {
+      'data-op-user-id': {
+        type: 'string',
+        default: () => '',
+      },
+      'data-op-user-nickname': {
+        type: 'string',
+        default: () => '',
+      },
+      'data-op-date': {
+        type: 'string',
+        default: () => '',
+      }
+    }
+  },
   parseHTML () {
     return [
       { tag: 'insert' }
@@ -67,6 +83,22 @@ export const InsertionMark = Mark.create({
 // delete mark
 export const DeletionMark = Mark.create({
   name: MARK_DELETION,
+  addAttributes () {
+    return {
+      'data-op-user-id': {
+        type: 'string',
+        default: () => '',
+      },
+      'data-op-user-nickname': {
+        type: 'string',
+        default: () => '',
+      },
+      'data-op-date': {
+        type: 'string',
+        default: () => '',
+      }
+    }
+  },
   parseHTML () {
     return [
       { tag: 'delete' }
@@ -89,6 +121,9 @@ let isStartChineseInput = false
 
 // get self extension instance by name
 const getSelfExt = (editor: Editor) => editor.extensionManager.extensions.find(item => item.type === 'extension' && item.name === EXTENSION_NAME) as Extension
+
+// get the current minute time, avoid two char with different time splitted with too many marks
+const getMinuteTime = () => Math.round(new Date().getTime() / 1000 / 60) * 1000 * 60
 
 /**
  * accept or reject tracked changes for all content or just the selection
@@ -186,7 +221,7 @@ const changeTrack = (opType: TRACK_COMMAND_TYPE, param: CommandProps) => {
  * 3. select two chars and inout a chinese char, the new char was input with wrong position. (fixed by stop input action)
  * 4. how to toggle to "hide" mode and can record the change ranges too, just look likes the office word
  */
-export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatusChange?: Function }>({
+export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatusChange?: Function, dataOpUserId?: string, dataOpUserNickname?: string }>({
   name: EXTENSION_NAME,
   onCreate () {
     if (this.options.onStatusChange) {
@@ -422,7 +457,11 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
       if (step instanceof ReplaceStep) {
         const invertedStep = step.invert(transaction.docs[index])
         if (step.slice.size) {
-          const insertionMark = editor.state.doc.type.schema.marks.insertion.create()
+          const insertionMark = editor.state.doc.type.schema.marks.insertion.create({
+            'data-op-user-id': thisExtension.options.dataOpUserId,
+            'data-op-user-nickname': thisExtension.options.dataOpUserNickname,
+            'data-op-date': getMinuteTime()
+          })
           const deletionMark = editor.state.doc.type.schema.marks.deletion.create()
           const from = step.from + reAddOffset
           const to = step.from + reAddOffset + step.slice.size
@@ -480,7 +519,11 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
           const { from } = reAddStep
           const to = from + reAddStep.slice.size
           // add delete mark for readd content
-          newChangeTr.addMark(from, to, newChangeTr.doc.type.schema.marks.deletion.create())
+          newChangeTr.addMark(from, to, newChangeTr.doc.type.schema.marks.deletion.create({
+            'data-op-user-id': thisExtension.options.dataOpUserId,
+            'data-op-user-nickname': thisExtension.options.dataOpUserNickname,
+            'data-op-date': getMinuteTime()
+          }))
           skipSteps.forEach((step) => {
             // delete the content if it is already with insert mark
             newChangeTr.step(step)

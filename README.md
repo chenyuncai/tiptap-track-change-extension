@@ -26,6 +26,8 @@ extensions: [
   ...OtherTiptapExtensions,
   TrackChangeExtension.configure({
     enabled: true,
+    dataOpUserId: '', // set the op userId
+    dataOpUserNickname: '', // set the op user nickname
     onStatusChange (status: boolean) {
       myTrackChangeEnabled = status
     }
@@ -39,6 +41,7 @@ editor.commands.acceptChange()
 editor.commands.acceptAllChange()
 editor.commands.rejectChange()
 editor.commands.rejectAllChange()
+editor.commands.updateOpUserOption('id', 'nickname')
 
 ```
 
@@ -54,12 +57,6 @@ deletion {
   text-decoration: line-through;
 }
 ```
-
-### next to do:
-
-1. save author, date info
-1. export the static util about the operation command when someone need to export a accepted/rejected document without a real operation
-1. deploy a online demo on vercel
 
 ###### Enjoy it...
 

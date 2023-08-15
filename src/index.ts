@@ -47,6 +47,10 @@ declare module '@tiptap/core' {
        * same to acceptAll but: remove deletion mark and remove all insertion nodes
        */
       rejectAllChanges: () => ReturnType, 
+      /**
+       * 
+       */
+      updateOpUserOption: (opUserId: string, opUserNickname: string) => ReturnType
     }
   }
 }
@@ -268,6 +272,12 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
       },
       rejectAllChanges: () => (param: CommandProps) => {
         changeTrack('reject-all', param)
+        return false
+      },
+      updateOpUserOption: (opUserId: string, opUserNickname: string) => (param: CommandProps) => {
+        const thisExtension = getSelfExt(param.editor)
+        thisExtension.options.dataOpUserId = opUserId
+        thisExtension.options.dataOpUserNickname = opUserNickname
         return false
       }
     }

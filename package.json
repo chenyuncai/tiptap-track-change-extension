@@ -1,6 +1,6 @@
 {
   "name": "track-change-extension",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A track change extension for tiptap editor. Just like the Office Word Revision.",
   "keywords": ["tiptap", "trackchange","revision","extension"],
   "license": "MIT",

@@ -196,8 +196,8 @@ const changeTrack = (opType: TRACK_COMMAND_TYPE, param: CommandProps) => {
     const isRejectDelete = opType === TRACK_COMMAND_REJECT && markRange.mark.type.name === MARK_DELETION
     if (isAcceptInsert || isRejectDelete) {
       // 1 and 4: remove mark
-      currentTr.removeMark(markRange.from - offset, markRange.to - offset, removeInsertMark)
-      currentTr.removeMark(markRange.from - offset, markRange.to - offset, removeDeleteMark)
+      currentTr.removeMark(markRange.from - offset, markRange.to - offset, removeInsertMark.type)
+      currentTr.removeMark(markRange.from - offset, markRange.to - offset, removeDeleteMark.type)
     } else {
       // 2 and 3 remove content
       currentTr.deleteRange(markRange.from - offset, markRange.to - offset)
@@ -294,12 +294,12 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
         key: new PluginKey<any>('composing-check'),
         props: {
           handleDOMEvents: {
-            compositionstart: event => {
+            compositionstart: (_event) => {
               LOG_ENABLED && console.log('start chinese input')
               // start and update will fire same time
               isStartChineseInput = true
             },
-            compositionupdate: event => {
+            compositionupdate: (_event) => {
               LOG_ENABLED && console.log('chinese input continue')
               composingStatus = IME_STATUS_CONTINUE
             }
@@ -480,10 +480,10 @@ export const TrackChangeExtension = Extension.create<{ enabled: boolean, onStatu
             newChangeTr.addMark(from, to, insertionMark)
           } else {
             // if disabled this extension, remove auto-used track mark for new content
-            newChangeTr.removeMark(from, to, insertionMark)
+            newChangeTr.removeMark(from, to, insertionMark.type)
           }
           // remove auto-used delete mark for new content anyway
-          newChangeTr.removeMark(from, to, deletionMark)
+          newChangeTr.removeMark(from, to, deletionMark.type)
         }
         if (step.from !== step.to && trackChangeEnabled) {
           LOG_ENABLED && console.log('find content to readd', step)
